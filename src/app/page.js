@@ -293,7 +293,7 @@ export default function Home() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `twinmind-session-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+    a.download = `meeting-copilot-session-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }, [transcriptEntries, suggestionBatches, chatMessages]);
@@ -321,7 +321,7 @@ export default function Home() {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-purple-500 flex items-center justify-center">
             <span className="text-white text-sm font-bold">T</span>
           </div>
-          <span className="text-sm font-semibold text-surface-50 tracking-tight">TwinMind</span>
+          <span className="text-sm font-semibold text-surface-50 tracking-tight">Meeting Copilot</span>
         </div>
 
         <div className="flex items-center gap-3">
