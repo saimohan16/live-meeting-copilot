@@ -27,7 +27,24 @@ export async function transcribeAudio(audioBlob, apiKey) {
   }
 
   const data = await res.json();
-  return data.text?.trim() || '';
+  const text = data.text?.trim() || '';
+
+  // Filter Whisper hallucinations on silence/noise
+  const hallucinations = [
+    'thank you', 'thanks', 'you', 'bye', 'goodbye',
+    'thank you for watching', 'thanks for watching',
+    'subtitles by', 'translated by', 'amara org',
+    'subscribe', 'like and subscribe', 'see you next time',
+    'the end', 'music', 'applause', 'laughter',
+    'ugh', 'hmm', 'um', 'uh', 'ah', 'oh',
+    'yeah', 'yes', 'no', 'okay', 'ok',
+  ];
+  const cleaned = text.toLowerCase().replace(/[.,!?]/g, '').trim();
+  if (hallucinations.includes(cleaned) || cleaned.length < 3) {
+    return '';
+  }
+
+  return text;
 }
 
 /**
@@ -35,9 +52,8 @@ export async function transcribeAudio(audioBlob, apiKey) {
  * Returns parsed JSON array of 3 suggestions.
  */
 export async function generateSuggestions(transcript, systemPrompt, apiKey, previousSuggestions = null) {
-  // Build the user message with transcript + previous suggestions context
   let userContent = `Here is the recent meeting transcript:\n\n${transcript}`;
-  
+
   if (previousSuggestions && previousSuggestions.length > 0) {
     const prevList = previousSuggestions
       .map((s) => `- [${s.type}] ${s.preview}`)
@@ -73,7 +89,6 @@ export async function generateSuggestions(transcript, systemPrompt, apiKey, prev
 
   try {
     const parsed = JSON.parse(content);
-    // Handle both array and object-with-array formats
     const suggestions = Array.isArray(parsed) ? parsed : parsed.suggestions || parsed.items || [];
     return suggestions.slice(0, 3);
   } catch {
@@ -84,10 +99,8 @@ export async function generateSuggestions(transcript, systemPrompt, apiKey, prev
 
 /**
  * Get a detailed answer or chat response.
- * Try streaming first, fall back to non-streaming if empty.
  */
 export async function streamChatResponse(messages, apiKey, onChunk) {
-  // Try non-streaming first — more reliable with GPT-OSS 120B
   const res = await fetch(`${GROQ_API_BASE}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -110,11 +123,13 @@ export async function streamChatResponse(messages, apiKey, onChunk) {
 
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content || '';
-  
+
   if (content) {
     onChunk(content, content);
     return content;
   }
 
-  throw new Error('Empty response from API');
+  const fallback = 'Unable to generate response right now. Try again in a moment.';
+  onChunk(fallback, fallback);
+  return fallback;
 }
