@@ -1,7 +1,7 @@
 import '../globals.css';
 
 export const metadata = {
-  title: 'TwinMind — Live Suggestions',
+  title: 'Meeting Copilot — Live Suggestions',
   description: 'AI meeting copilot with real-time suggestions',
 };
 
